@@ -1,0 +1,78 @@
+
+#include "kbkey.h"
+
+void kb_enter(uint32_t press)
+{
+  if (press == KB_UNPRESS) return;
+
+  if (press == KB_HOLD)
+  {
+    return;
+  }
+
+  if ( press == KB_PRESS)
+  {
+    return;
+  }
+}
+
+void kb_up(uint32_t press)
+{
+
+  if (press == KB_UNPRESS) return;
+
+  if (visIndex  < 10) visIndex++;
+}
+
+void kb_dn(uint32_t press)
+{
+  if (press == KB_UNPRESS) return;
+
+  if (visIndex  > 0) visIndex--;
+}
+
+
+const kb_cfg_t kb_handlers[3] =
+{
+  {&kb_enter, KB_CLH_HOLD},
+  {&kb_up, KB_CLH_CLICK},
+  {&kb_dn, KB_CLH_NON}
+};
+
+
+const din_ports_t io_keys_ports[3] =
+ {
+   { &GPIOA->IDR, 1<<1, 1}, // inverted
+   { &GPIOB->IDR, 1<<2, 0}, // non_inverted
+   { &GPIOC->IDR, 1<<0, 0}  // non_inverted
+ };
+
+uint32_t spi_keys;
+
+din_ports_t kb_ports[3] = { {&spi_keys, 1<<1, 0},  {&spi_keys, 1<<2, 0}, {&spi_keys, 1<<0, 0} };
+din_t* kb_states;
+kbp_t kb_cfg;
+
+
+void kb_install(void)
+{
+
+  kb_cfg.din_port = (void*) kb_ports;
+  kb_cfg.din_size = 3;
+  kb_cfg.din_const = 20;
+  kb_cfg.din_os_flag = stf_1kHz;
+
+  kb_cfg.kb_cfg = (void*) kb_handlers;
+  kb_cfg.kb_size = 3;
+  kb_cfg.kb_click_const = 6;
+  kb_cfg.kb_hold_const = 60;
+  kb_cfg.kb_os_flag = stf_100Hz;
+
+  kb_states = kb_init(&kb_cfg);
+}
+
+void some(void)
+{
+  if (kb_states[0].state) {};
+}
+

@@ -1,0 +1,257 @@
+void comp2_monitor(void)
+{
+        if (COMP2->CSR & COMP2_CSR_COMP2OUT) pin_set(GPIOA, 5); else pin_clr(GPIOA, 5);
+}
+
+        // COMP2 init
+        //----------------------
+#define COMP2_INPUT_NEG 8
+#define COMP4_INPUT_NEG 5
+
+        COMP2->CSR = COMP2_CSR_COMP2EN |
+          COMP2_CSR_COMP2INSEL_0*(COMP2_INPUT_NEG & 7)  |
+          COMP2_CSR_COMP2INSEL_3*(COMP2_INPUT_NEG >> 3) |
+          COMP2_CSR_COMP2POL*0;
+
+        COMP4->CSR = COMP4_CSR_COMP4EN |
+          COMP4_CSR_COMP4INSEL_0*(COMP4_INPUT_NEG & 7)  |
+          COMP4_CSR_COMP4INSEL_3*(COMP4_INPUT_NEG >> 3) |
+          COMP4_CSR_COMP4POL*0;
+
+
+
+
+//------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------
+
+#pragma pack(push,2)
+
+typedef struct {
+  uint16_t for_start_ang ;
+  uint16_t for_end_ang   ;
+  uint16_t rev_start_ang ;
+  uint16_t rev_end_ang   ;
+
+  uint16_t for_limit   ;
+  uint16_t rev_limit   ;
+
+  uint16_t rev_sensor   ;
+  uint16_t run_dir      ;
+
+} TCfg;
+
+#pragma pack(pop)
+
+typedef struct {
+  uint16_t T14 ;
+  uint16_t T15;
+  uint16_t T16;
+  uint16_t T17 ;
+} TMonitor;
+
+typedef struct {
+  uint16_t angle ;
+  uint16_t pwm_out;
+
+  uint16_t out_voltage;
+
+  uint8_t direction ;
+  uint8_t run   ;
+
+  uint8_t IO1   ;
+  uint8_t IO2   ;
+
+  uint16_t for_pos;
+  uint16_t rev_pos;
+} TControl;
+
+
+
+#pragma pack(push,2)
+TCfg  cfg; //= {};
+#pragma pack(pop)
+
+
+TMonitor  monitor;
+TControl  control;
+
+//---------------------------------------------------------------------------
+// PWM
+#define f_pwm 32000
+//#define f_pwm_div (F_APB2_TIM/f_pwm/2)
+
+#define TIMER TIM1
+uint16_t pwm_tim_arr;
+uint16_t pwm_max_power;
+
+
+void clk_tim_init(void)
+{
+  RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+
+  TIM1->CCR4 = 0xffff/3;
+
+  TIM1->PSC = 256;//16;
+  TIM1->CCMR2 = TIM_CCMR2_OC4M_0*6;
+  TIM1->CCER  = TIM_CCER_CC4E;
+  TIM1->CR1 = TIM_CR1_CEN;
+  TIM1->BDTR = TIM_BDTR_MOE;
+}
+
+void cnt_tim_init(void)
+{
+  RCC->APB2ENR |= RCC_APB2ENR_TIM15EN;
+  RCC->APB2ENR |= RCC_APB2ENR_TIM16EN;
+  RCC->APB2ENR |= RCC_APB2ENR_TIM17EN;
+
+
+  TIM15->SMCR = TIM_SMCR_SMS_0*7 | TIM_SMCR_TS_0*5;
+  TIM15->CR1 = TIM_CR1_CEN;
+
+  TIM16->PSC = 0xffff;
+  TIM16->SMCR = TIM_SMCR_SMS_0*7 | TIM_SMCR_TS_0*5;
+  TIM16->CR1 = TIM_CR1_CEN;
+
+  TIM17->PSC = 0xffff;
+  TIM17->SMCR = TIM_SMCR_SMS_0*7 | TIM_SMCR_TS_0*5;
+  TIM17->CR1 = TIM_CR1_CEN;
+}
+
+
+
+
+
+void hr_tim_init(void)
+{
+        RCC->APB2ENR |= RCC_APB2ENR_HRTIM1EN;
+  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+  RCC->APB2ENR |= RCC_AHB2ENR_DAC1EN;
+  RCC->APB2ENR |= RCC_AHB2ENR_DAC2EN;
+
+        // DAC2 init
+        //----------------------
+//  DAC2->CR = DAC_CR_EN1 | DAC_CR_OUTEN1*0;
+  DAC2->DHR12R1 = 4095/2;
+
+//  DAC1->CR = DAC_CR_EN2 | DAC_CR_OUTEN2*0;
+  DAC1->DHR12R2 = 4095/2;
+
+
+        // HRTIM init
+        //----------------------
+//      RCC->CFGR3 |= RCC_CFGR3_HRTIM1SW;
+
+        HRTIM1->sCommonRegs.DLLCR = HRTIM_DLLCR_CAL;
+
+        while ( (HRTIM1->sCommonRegs.ISR & HRTIM_ISR_DLLRDY) == 0);
+
+        HRTIM1->sCommonRegs.DLLCR = HRTIM_DLLCR_CALEN | HRTIM_DLLCR_CALRTE_0*0;
+
+#define HRTIM_PER   0x1000
+#define HRTIM_PHASE (HRTIM_PER/2/2)
+#define HRTIM_PULSE (HRTIM_PER/2/8)
+
+// source: comp2
+// ext_ev = 6
+//
+
+        HRTIM1->sCommonRegs.EECR2 = HRTIM_EECR2_EE6SRC_0*1 | HRTIM_EECR2_EE6POL*0 | HRTIM_EECR2_EE6SNS_0*0 |
+                                    HRTIM_EECR2_EE7SRC_0*1 | HRTIM_EECR2_EE7POL*0 | HRTIM_EECR2_EE7SNS_0*0;
+
+        HRTIM1->sCommonRegs.EECR3 = HRTIM_EECR3_EEVSD_0*0 | HRTIM_EECR3_EE6F_0*1  | HRTIM_EECR3_EE7F_0*1;
+
+// dig input: PC11, PC12
+//  HRTIM1->sCommonRegs.EECR1 = HRTIM_EECR1_EE1SRC_0*0 | HRTIM_EECR1_EE2SRC_0*0 ;// HRTIM_EECR1_EE1POL*0 | HRTIM_EECR1_EE1SNS_0*0;
+
+// TIM_A
+        HRTIM1->sTimerxRegs[0].TIMxCR = HRTIM_TIMCR_CK_PSC_0*5 | HRTIM_TIMCR_CONT*1 | HRTIM_TIMCR_HALF*1 | HRTIM_TIMCR_TRSTU*1 | HRTIM_TIMCR_PREEN*1;
+        HRTIM1->sTimerxRegs[0].OUTxR = HRTIM_OUTR_POL1*0 | HRTIM_OUTR_POL2*0 | HRTIM_OUTR_IDLES1*0 | HRTIM_OUTR_DTEN;
+        HRTIM1->sTimerxRegs[0].PERxR = HRTIM_PER;
+
+        HRTIM1->sTimerxRegs[0].CMP1xR = HRTIM1->sTimerxRegs[0].PERxR/3;
+        HRTIM1->sTimerxRegs[0].CMP2xR = HRTIM1->sTimerxRegs[0].PERxR/2;
+
+        HRTIM1->sTimerxRegs[0].SETx2R = HRTIM_SET2R_PER;
+        HRTIM1->sTimerxRegs[0].RSTx2R = HRTIM_RST2R_CMP2;
+
+        HRTIM1->sTimerxRegs[0].SETx1R = HRTIM_SET1R_PER;
+        HRTIM1->sTimerxRegs[0].RSTx1R = HRTIM_RST1R_CMP1;
+        HRTIM1->sTimerxRegs[0].DTxR   = HRTIM_DTR_DTR_0*500 | HRTIM_DTR_DTF_0*500 | HRTIM_DTR_DTPRSC_0*0;
+
+// TIM_B
+
+//      HRTIM1->sTimerxRegs[1].EEFxR1  = HRTIM_EEFR1_EE1LTCH*0 | HRTIM_EEFR1_EE1FLTR_0*10*1;
+//      HRTIM1->sTimerxRegs[1].EEFxR2  = HRTIM_EEFR2_EE6LTCH*0 | HRTIM_EEFR2_EE6FLTR_0*10*1;
+
+//      HRTIM1->sTimerxRegs[1].EEFxR1  = HRTIM_EEFR1_EE1FLTR_0*1*1 | HRTIM_EEFR1_EE2FLTR_0*5*1;
+        HRTIM1->sTimerxRegs[1].EEFxR2  = HRTIM_EEFR2_EE6FLTR_0*1*1 | HRTIM_EEFR2_EE7FLTR_0*5*1;
+
+  HRTIM1->sTimerxRegs[1].RSTxR  = HRTIM_RSTR_MSTCMP1;
+        HRTIM1->sTimerxRegs[1].TIMxCR = HRTIM_TIMCR_CK_PSC_0*5 | HRTIM_TIMCR_CONT*1 | HRTIM_TIMCR_HALF*1 | HRTIM_TIMCR_TRSTU*1 | HRTIM_TIMCR_PREEN*1;
+        HRTIM1->sTimerxRegs[1].OUTxR = HRTIM_OUTR_POL1*0 | HRTIM_OUTR_IDLES1*0 | HRTIM_OUTR_DTEN;
+        HRTIM1->sTimerxRegs[1].PERxR = HRTIM_PER;
+//      HRTIM1->sTimerxRegs[1].CMP1xR = HRTIM1->sTimerxRegs[0].PERxR/3;
+        HRTIM1->sTimerxRegs[1].CMP1xR = HRTIM_PER/2;
+        HRTIM1->sTimerxRegs[1].CMP3xR = HRTIM_PER-HRTIM_PHASE;
+        HRTIM1->sTimerxRegs[1].SETx1R = HRTIM_SET1R_PER  | HRTIM_RST1R_EXTVNT6*1; //ev1
+        HRTIM1->sTimerxRegs[1].RSTx1R = HRTIM_RST1R_CMP1 | HRTIM_RST1R_EXTVNT7*1; //ev2
+        HRTIM1->sTimerxRegs[1].DTxR   = HRTIM_DTR_DTR_0*500 | HRTIM_DTR_DTF_0*500 | HRTIM_DTR_DTPRSC_0*0;
+
+
+//      HRTIM1->sTimerxRegs[4].EEFxR2  = HRTIM_EEFR2_EE6LTCH*0 | HRTIM_EEFR2_EE6FLTR_0*7;
+        HRTIM1->sTimerxRegs[4].RSTxR  = HRTIM_RSTR_MSTCMP2;
+        HRTIM1->sTimerxRegs[4].TIMxCR = HRTIM_TIMCR_CK_PSC_0*5 | HRTIM_TIMCR_CONT*1 | HRTIM_TIMCR_HALF*0 | HRTIM_TIMCR_TRSTU*1 | HRTIM_TIMCR_PREEN*1;
+        HRTIM1->sTimerxRegs[4].OUTxR = HRTIM_OUTR_POL1*0 | HRTIM_OUTR_IDLES1*0 | HRTIM_OUTR_DTEN*0;
+        HRTIM1->sTimerxRegs[4].PERxR = HRTIM_PER/2;
+        HRTIM1->sTimerxRegs[4].CMP1xR = 1;//HRTIM_PER/16;
+        HRTIM1->sTimerxRegs[4].CMP2xR = 10;//HRTIM_PER/16;
+        HRTIM1->sTimerxRegs[4].SETx1R = HRTIM_SET1R_CMP1;//HRTIM_SET1R_PER;
+        HRTIM1->sTimerxRegs[4].RSTx1R = HRTIM_RST1R_CMP2;
+//      HRTIM1->sTimerxRegs[4].DTxR   = HRTIM_DTR_DTR_0*500 | HRTIM_DTR_DTF_0*500 | HRTIM_DTR_DTPRSC_0*0;
+
+//      HRTIM1->sTimerxRegs[4].EEFxR2  = HRTIM_EEFR2_EE6LTCH*0 | HRTIM_EEFR2_EE6FLTR_0*7;
+//      HRTIM1->sTimerxRegs[2].RSTxR  = HRTIM_RSTR_MSTCMP2;
+        HRTIM1->sTimerxRegs[2].TIMxCR = HRTIM_TIMCR_CK_PSC_0*5 | HRTIM_TIMCR_CONT*1 | HRTIM_TIMCR_HALF*0 | HRTIM_TIMCR_TRSTU*1 | HRTIM_TIMCR_PREEN*1;
+        HRTIM1->sTimerxRegs[2].OUTxR = HRTIM_OUTR_POL1*0 | HRTIM_OUTR_IDLES1*0 | HRTIM_OUTR_DTEN*0;
+        HRTIM1->sTimerxRegs[2].PERxR = HRTIM_PER;
+        HRTIM1->sTimerxRegs[2].CMP2xR = HRTIM_PER/2;
+        HRTIM1->sTimerxRegs[2].SETx2R = HRTIM_SET2R_PER;
+        HRTIM1->sTimerxRegs[2].RSTx2R = HRTIM_RST2R_CMP2;
+
+// TIM_M
+        HRTIM1->sMasterRegs.MPER = HRTIM_PER;
+        HRTIM1->sMasterRegs.MCMP1R = HRTIM_PHASE;
+        HRTIM1->sMasterRegs.MCMP2R = HRTIM_PULSE;
+
+        HRTIM1->sMasterRegs.MCR = HRTIM_MCR_CK_PSC_0*5 | HRTIM_MCR_CONT*1 | HRTIM_MCR_MREPU*1 | HRTIM_MCR_PREEN*1 |
+  HRTIM_MCR_TACEN | HRTIM_MCR_TBCEN | HRTIM_MCR_TECEN | HRTIM_MCR_MCEN | HRTIM_MCR_TCCEN ;
+
+//  pin_set(GPIOA, 5);
+
+        HRTIM1->sCommonRegs.OENR = HRTIM_OENR_TA1OEN*1 | HRTIM_OENR_TA2OEN*1 | HRTIM_OENR_TB1OEN*1 | HRTIM_OENR_TB2OEN*1 | HRTIM_OENR_TE1OEN*1  | HRTIM_OENR_TC2OEN*1;
+}
+
+
+
+// HRTIM
+//----------------------------------------  
+  gpioCFG(GPIOA, 8,  gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | 13<<gpaf_indx_bp );  // CHA1
+  gpioCFG(GPIOA, 9,  gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | 13<<gpaf_indx_bp );  // CHA2
+	
+  gpioCFG(GPIOA, 10,  gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | 13<<gpaf_indx_bp );  // CHB1
+  gpioCFG(GPIOA, 11,  gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | 13<<gpaf_indx_bp );  // CHB2
+	
+  gpioCFG(GPIOC, 8,  gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | 3<<gpaf_indx_bp );  // CHE1
+	
+  gpioCFG(GPIOA, 12,  gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | 8<<gpaf_indx_bp );  // COMP2_OUT
+	
+  gpioCFG(GPIOB, 13,  gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | 13<<gpaf_indx_bp );  // CHC2
+	
+	
+  gpioCFG(GPIOC, 11, gpd_input  | gpit_pullup             | gpaf_alter | 3<<gpaf_indx_bp );  //EV2
+  gpioCFG(GPIOC, 12, gpd_input  | gpit_pullup             | gpaf_alter | 3<<gpaf_indx_bp );  //EV1
+	
+//----------------------------------------  
+// Uart inreface 2
+  gpioCFG(GPIOA, 2, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | 7<<gpaf_indx_bp );  //TX
+  gpioCFG(GPIOA, 3, gpd_input  | gpit_pullup             | gpaf_alter | 7<<gpaf_indx_bp );  //RX

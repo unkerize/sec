@@ -1,0 +1,13 @@
+For new froject
+ - select chip in keil
+ - if neded define chip in brd_xx
+ - define chip in proj\option\asmoption
+---------------------------------------
+ startup.s
+ - app stack size
+---------------------------------------
+ config.h:
+  - slk system
+  - stCallSize
+  - rtsCallSize
+  - include brd_xx

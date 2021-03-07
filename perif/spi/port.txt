@@ -1,0 +1,40 @@
+  //-------------------------------------------------------------------
+  // SPI Ports/Alternative funcs
+  //-------------------------------------------------------------------
+  // [STM32F030, STM32F051]
+  // spi1
+    gpioCFG(GPIOA, 5, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI1_ALTERF<<gpaf_indx_bp) );  // spi sck
+    gpioCFG(GPIOA, 6, gpd_input  | gpit_pullup   | 0       | gpaf_alter | (SPI1_ALTERF<<gpaf_indx_bp) );  // spi miso
+    gpioCFG(GPIOA, 7, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI1_ALTERF<<gpaf_indx_bp) );  // spi mosi
+
+  // spi2
+    gpioCFG(GPIOB, 13, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI2_ALTERF<<gpaf_indx_bp) );  // spi sck
+    gpioCFG(GPIOB, 14, gpd_input  | gpit_pullup   | 0       | gpaf_alter | (SPI2_ALTERF<<gpaf_indx_bp) );  // spi miso
+    gpioCFG(GPIOB, 15, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI2_ALTERF<<gpaf_indx_bp) );  // spi mosi
+
+  //  spi3
+    gpioCFG(GPIOC, 10, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI3_ALTERF<<gpaf_indx_bp) );  // spi sck
+    gpioCFG(GPIOC, 11, gpd_input  | gpit_pullup   | 0       | gpaf_alter | (SPI3_ALTERF<<gpaf_indx_bp) );  // spi miso
+    gpioCFG(GPIOC, 12, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI3_ALTERF<<gpaf_indx_bp) );  // spi mosi
+  //-------------------------------------------------------------------
+
+
+  //-------------------------------------------------------------------
+  // SPI Ports/Alternative funcs
+  //-------------------------------------------------------------------
+  // [STM32F303xB,C]
+  // spi1
+    gpioCFG(GPIOA, 5, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI1_ALTERF<<gpaf_indx_bp) );  // spi sck
+    gpioCFG(GPIOA, 6, gpd_input  | gpit_pullup   | 0       | gpaf_alter | (SPI1_ALTERF<<gpaf_indx_bp) );  // spi miso
+    gpioCFG(GPIOA, 7, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI1_ALTERF<<gpaf_indx_bp) );  // spi mosi
+
+  // spi2
+    gpioCFG(GPIOB, 13, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI2_ALTERF<<gpaf_indx_bp) );  // spi sck
+    gpioCFG(GPIOB, 14, gpd_input  | gpit_pullup   | 0       | gpaf_alter | (SPI2_ALTERF<<gpaf_indx_bp) );  // spi miso
+    gpioCFG(GPIOB, 15, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI2_ALTERF<<gpaf_indx_bp) );  // spi mosi
+
+  //  spi3
+    gpioCFG(GPIOC, 10, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI3_ALTERF<<gpaf_indx_bp) );  // spi sck
+    gpioCFG(GPIOC, 11, gpd_input  | gpit_pullup   | 0       | gpaf_alter | (SPI3_ALTERF<<gpaf_indx_bp) );  // spi miso
+    gpioCFG(GPIOC, 12, gpd_output | gpot_pushpull | gpos_hi | gpaf_alter | (SPI3_ALTERF<<gpaf_indx_bp) );  // spi mosi
+  //-------------------------------------------------------------------

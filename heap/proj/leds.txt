@@ -1,0 +1,20 @@
+
+void ledPulse1(void)
+{
+  pin_set(ledPORT, led1);
+  pin_set(ledPORT, led1);
+  pin_set(ledPORT, led1);
+  pin_set(ledPORT, led1);
+  pin_set(ledPORT, led1);
+  pin_set(ledPORT, led1);
+
+  pin_clr(ledPORT, led1);
+}
+
+
+//------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------
+void ledTask1(void)
+{
+  pin_xor(ledPORT, led1);
+}

@@ -1,0 +1,24 @@
+
+#define rtSTACK_SIZE 100
+uint32_t ledTaskStack[rtSTACK_SIZE];
+
+
+
+void ledTask2(void)
+{
+  while(1)
+	{
+	  pin_set(ledPORT, led1);
+		rtsDelay(200);
+	  pin_clr(ledPORT, led1);
+		rtsDelay(200);
+		
+//		NVIC_SystemReset();
+//		while(1) {};
+		
+//	  pin_xor(ledPORT, led2);
+//		rtsDelay(200);
+	}
+}
+
+  rtsAddTask(&ledTask2, &ledTaskStack[rtSTACK_SIZE], 1);

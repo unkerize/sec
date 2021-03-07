@@ -1,0 +1,6 @@
+
+//#include "ff.h"   
+//#include "app_fat.h"   
+
+//      mediaInit(mediaBuf1, mediaBuf2);
+//      fat_init();

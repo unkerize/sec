@@ -1,0 +1,5 @@
+# dont track listings
+Listings
+Output
+!Output/*.hex
+

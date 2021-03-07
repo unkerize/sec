@@ -1,0 +1,92 @@
+
+#include "mface.h"
+#include "decseg.h"
+
+uint16_t prev[2];
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+static mf_t*   vis_mf;
+
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+void vis_out(uint16_t value, uint8_t pos, uint8_t dot_pos)
+{
+   if (dot_pos > 4) return;
+
+   decseg_out_i16(value, &vis_mf->segs[pos], 4);
+
+   if (dot_pos == 0) return;
+
+   vis_mf->segs[pos+dot_pos-1] |= segDP;
+}
+
+
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+void vis_handler(void)
+{
+        if ( abs(prev[0] - adc_buff[0]) > 1)    vis_out(adc_buff[0], 0,0 ) ;
+        if ( abs(prev[1] - adc_buff[1]) > 1)    vis_out(adc_buff[1], 4,0 ) ;
+
+        prev[0] = adc_buff[0];
+        prev[1] = adc_buff[1];
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+void kh1(uint32_t edge) //up
+{
+  if (edge == 0) return;
+
+}
+
+void kh2(uint32_t edge) //dn
+{
+  if (edge == 0) return;
+}
+
+void kh3(uint32_t edge)  //left
+{
+  if (edge == 0) return;
+}
+
+void kh4(uint32_t edge)  //right
+{
+  if (edge == 0) return;
+}
+
+void kh5(uint32_t edge) // esc
+{
+        if (edge == 0) return;
+}
+
+void kh6(uint32_t edge) // enter
+{
+        if (edge == 0) return;
+}
+
+void kh7(uint32_t edge)
+{
+  if (edge == 0) return;
+
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+static const kb_cfg_t vis_kb_cfg[MF_KEY_NUM] = {
+  {&kh1, 1},  //up
+  {&kh2, 1},  //dn
+  {&kh3, 1},     //left
+  {&kh4, 1},     //right
+  {&kh5, 0},     //esc
+  {&kh6, 0},     //enter
+  {&kh7, 0} };   //res
+
+
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+void vis_init(void)
+{
+        vis_mf = mf_init( (kb_cfg_t*) vis_kb_cfg);
+        stAddTask(&vis_handler,stf_100Hz);
+}
+
+        vis_init();

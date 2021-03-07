@@ -1,0 +1,54 @@
+/*
+void SD_IO_Init(void)
+{
+  // SD SPI Config
+  spih =  spiAdd(SPI2, spioMODE3 | spioMSBF | spioBR2 | spiOSStyle | (spirtsh<<spioOSindx_bp) );
+
+  // SD chip select high
+  SD_CS_HIGH();
+  //------------Put SD in SPI mode--------------
+  // Send dummy byte 0xFF, 10 times with CS high
+  // Rise CS and MOSI for 80 clocks cycles
+  spiTxBlock(spih,0,0,10);
+}
+*/
+
+
+
+
+/**
+  * @brief  Initializes the SD/SD communication.
+  * @retval The SD Response:
+  *         - MSD_ERROR : Sequence failed
+  *         - MSD_OK    : Sequence succeed
+  */
+uint8_t BSP_SD_Init_(void)
+{
+  // Configure IO functionalities for SD pin (spi)
+
+  // SD SPI Config
+  spih =  spiAdd(SPI2, spioMODE3 | spioMSBF | spioBR2 | spiOSStyle | (spirtsh<<spioOSindx_bp) );
+
+  // SD chip select high
+  SD_CS_HIGH();
+  //------------Put SD in SPI mode--------------
+  // Send dummy byte 0xFF, 10 times with CS high
+  // Rise CS and MOSI for 80 clocks cycles
+  spiTxBlock(spih,0,0,10);
+
+//  SD_IO_Init();
+
+  SdStatus = SD_PRESENT;
+
+#ifdef _SD_USE_DETECT
+  // Check SD card detect pin
+  if( !SD_DETECT() )
+  {
+    SdStatus = SD_NOT_PRESENT;
+    return MSD_ERROR;
+  }
+#endif
+
+  // SD initialized and set to SPI mode properly
+  return (SD_GoIdleState());
+}

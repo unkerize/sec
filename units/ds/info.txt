@@ -1,0 +1,20 @@
+
+event_temp:
+pre  - event before convertion of sens list
+post - event after  convertion of sens list
+
+event_key:
+pre  - event on touch
+post - event on untouch
+
+func:
+ds_init
+
+ds_get_count
+ds_read_temp
+ds_read_key
+
+ds_cmd_ready
+ds_get_addr
+ds_get_scratchpad
+ds_get_power_status
